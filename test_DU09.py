@@ -31,6 +31,8 @@ import unittest
 import du09_balanced_bst as du
 import os
 import subprocess
+# from json import JSONDecodeError
+# import json
 
 Node = du.Node
 BSTree = du.BSTree
@@ -51,6 +53,26 @@ wsl_directory = f"/mnt/{drive_letter}/{rest}"
 
 # --- GraphViz downloader and checker ---
 def graphviz_downloader():
+    # --- Config file for GraphViz download ---
+    # def create_json():
+    #     with open("SomeConfigs.json", "w") as new:
+    #         json.dump({"downloaded": 0}, new, indent=2)
+    #
+    # # 0 means that IT IS NOT DOWNLOADED
+    # # 1 means that return everything is OK
+    #
+    # if not os.path.exists("SomeConfigs.json"):
+    #     create_json()
+    #
+    # with open("SomeConfigs.json", "r", encoding="utf-8") as conf:
+    #     try:
+    #         config = json.load(conf)
+    #     except json.JSONDecodeError:
+    #         raise JSONDecodeError
+    #
+    #     if config.get('downloaded', 0) == 1:
+    #         return
+
     def has_graphviz() -> bool:
         return subprocess.run(
             ["wsl", "bash", "-c", "command -v dot"],
@@ -72,13 +94,20 @@ def graphviz_downloader():
 
     if has_graphviz():
         print("✅ Graphviz is already installed.")
-        return
+        # config['downloaded'] = 1
+        # with open("SomeConfigs.json", "w") as conf:
+        #     json.dump(config, conf)
+        # return
 
     install_graphviz()
 
     if not has_graphviz():
         print("Failed to download GraphViz!")
         raise FileNotFoundError
+
+    # config['downloaded'] = 1
+    # with open("SomeConfigs.json", "w") as conf:
+    #     json.dump(config, conf)
 
     print("✅ Graphviz installed successfully.")
 
@@ -102,7 +131,7 @@ def before():
                         print(f"Error deleting '{file_path}': {error}")
                 else:
                     print(f"'{file_path}' is not a file.")
-        print("Completed checking for 'tree.dot', 'tree.png', 'Aftertree.dot', 'Aftertree.png'.")
+        print("Completed checking for 'tree.dot', 'tree.png'.")
     else:
         print(f"Directory '{directory}' does not exit!!!")
         raise NotADirectoryError
