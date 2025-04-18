@@ -1,28 +1,41 @@
+"""
+What this script does
+---------------------
+▪ Builds five sample binary‑search trees  
+▪ Verifies your implementation of
+      • check_size
+      • check_3_5_balanced
+      • insert
+      • rebalance
+▪ Silently install Graphviz inside WSL (if it is not already installed) so
+  that tree diagrams can be rendered without manual setup
+▪ Cleans old *.dot / *.png files, regenerates fresh DOT files and
+  converts them to PNG using Graphviz
+
+How to use after()
+------------------
+after(name, tree1=None, …, tree5=None)
+    • Call this anywhere in your own tests or debugging code.
+    • Pass up to five BSTree
+      Example: `after("insertStep", tree1=my_tree)`
+    • For every non‑None tree it writes
+          <name>1.dot  →  <name>1.png
+          <name>2.dot  →  <name>2.png
+          …
+      in the working directory, let you open the PNG and inspect
+      the exact structure that existed at that point in the algorithm.
+      ( examples: after("YourNameForIt", tree1=self.tree1, tree2=myTree4) )
+"""
+
 import unittest
 import du09_balanced_bst as du
 import os
 import subprocess
 
-
 Node = du.Node
 BSTree = du.BSTree
 
-
-"""
-Najprv je potrebné nainštalovať Graphviz, aby tento program správne fungoval:
-1. Otvorte WSL na počítači (musi byť Ubuntu alebo Debian).
-2. Zadajte: sudo apt update
-3. Zadajte: sudo apt install graphviz
-4. Overte inštaláciu príkazom: dot -V
-
-Pred spustením kódu je dôležité zmeniť hodnotu premennej directory (pozri nižšie)
-na adresár, v ktorom sa nachádza súbor du09. Uistite sa,
-že úvodzovky okolo adresy zostanú neporušené – stačí skopírovať adresu medzi úvodzovky (r"nova_adresa")
-"""
-
-path = os.getcwd()
-directory = rf"{path}"
-
+directory = rf"{os.getcwd()}"
 # --- Convertor to WSL directory ---
 if len(directory) < 3 or directory[1] != ":":
     raise ValueError("Invalid Windows path format.")
@@ -32,31 +45,45 @@ drive_letter = directory[0].lower()
 rest = directory[2:]
 if rest.startswith("\\") or rest.startswith("/"):
     rest = rest[1:]
-
 rest = rest.replace("\\", "/")
 
 wsl_directory = f"/mnt/{drive_letter}/{rest}"
 
-# --- Download GraphViz ---
-try:
-    res = subprocess.run(["wsl", "bash", "-c", "dot -V"], capture_output=True, text=True, check=True)
-    print(f"You do have GraphViz installed, version: {res.stdout}")
-    print()
+# --- GraphViz downloader and checker ---
+def graphviz_downloader():
+    def has_graphviz() -> bool:
+        return subprocess.run(
+            ["wsl", "bash", "-c", "command -v dot"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ).returncode == 0
 
-except subprocess.CalledProcessError:
-    print(f"GraphViz not installed.")
-    ans = input("Do you want to install? Y/N")
-    ans = ans.strip().upper()
+    def install_graphviz() -> None:
+        print("Installing Graphviz in WSL …")
+        cmd = (
+            "export DEBIAN_FRONTEND=noninteractive ; "
+            "apt-get update -qq && "
+            "apt-get install -y graphviz"
+        )
+        subprocess.run(
+            ["wsl", "-u", "root", "--", "sh", "-c", cmd],
+            check=True,
+        )
 
-    if ans == "Y":
-        try:
-            first = subprocess.run(["wsl", "bash", "-c", "sudo apt update && sudo apt install graphviz"],
-                       capture_output=True, text=True, check=True)
-            print(f"Successfully downloaded: version: {first.stdout}")
-        except subprocess.CalledProcessError:
-            print("Download failed")
-            print("Try again later")
+    if has_graphviz():
+        print("✅ Graphviz is already installed.")
+        return
 
+    install_graphviz()
+
+    if not has_graphviz():
+        print("Failed to download GraphViz!")
+        raise FileNotFoundError
+
+    print("✅ Graphviz installed successfully.")
+
+
+# --- Functions for drawing ---
 def before():
     # --- To remove old photos and old tree.dot files ---
     if os.path.isdir(directory):
@@ -100,14 +127,14 @@ def before():
     subprocess.run(["wsl", "bash", "-c", command], capture_output=True, text=True)
 
 
-def after(tree1=None, tree2=None, tree3=None, tree4=None, tree5=None):
+def after(name: str,tree1=None, tree2=None, tree3=None, tree4=None, tree5=None):
     dot_files = []
     # --- Draw After ---
     for idx, tree in enumerate(
             (tree1, tree2, tree3, tree4, tree5), start=1):
         if tree is not None:
-            du.draw_tree(tree, f"Aftertree{idx}.dot")
-            dot_files.append(f"Aftertree{idx}.dot")
+            du.draw_tree(tree, f"{name}{idx}.dot")
+            dot_files.append(f"{name}{idx}.dot")
 
 
     png_commands = " ; ".join(
@@ -124,11 +151,11 @@ def after(tree1=None, tree2=None, tree3=None, tree4=None, tree5=None):
         if file_name.endswith(".dot"):
             try:
                 os.remove(os.path.join(directory, file_name))
-                print(f"Deleted {file_name}!!!")
+                print(f"Deleted this: {file_name}!!!")
             except OSError as err:
                 print(f"Cannot delete {file_name}: {err}")
 
-
+# --- Helper functions ---
 def update_sizes(node):
     if node is None: return 0
     node.size = 1 + update_sizes(node.left) + update_sizes(node.right)
@@ -178,7 +205,7 @@ def make_trees():
 
     return tree1, tree2, tree3, tree4, tree5
 
-
+# --- Main testes ---
 class Tester(unittest.TestCase):
     def setUp(self):
         self.tree1, self.tree2, self.tree3, self.tree4, self.tree5 = make_trees()
@@ -246,12 +273,12 @@ class Tester(unittest.TestCase):
         self.assertEqual(n5.size, 2)
         self.assertEqual(n10.size, 4)
 
-        after(tree1=self.tree1, tree4=self.tree4)
+        after(name="insertTree", tree1=self.tree1, tree4=self.tree4)
 
     # --- rebalance ---
     def test_rebalance(self):
         tree = self.tree4
-        c3 = tree.root.left; c2 = c3.left; c1 = c2.left
+        c3 = tree.root.left; c2 = c3.left # ; c1 = c2.left
         du.rebalance(tree, c3)
         self.assertTrue(du.check_size(tree))
         self.assertTrue(du.check_3_5_balanced(tree))
@@ -281,9 +308,9 @@ class Tester(unittest.TestCase):
         self.assertTrue(du.check_size(baby))
         self.assertTrue(du.check_3_5_balanced(baby))
 
-        after(tree4=self.tree4)
+        after(name="rebalanceTree", tree4=self.tree4)
 
-
+graphviz_downloader()
 before()
 if __name__ == '__main__':
     unittest.main()
