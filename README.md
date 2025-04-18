@@ -1,2 +1,2 @@
-# work_folder
-work repo for MatejCreator's weird projects
+# Work_Folder
+Work repo for MatejCreator's weird projects
