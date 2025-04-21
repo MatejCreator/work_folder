@@ -31,8 +31,7 @@ import unittest
 import du09_balanced_bst as du
 import os
 import subprocess
-# from json import JSONDecodeError
-# import json
+import shutil
 
 Node = du.Node
 BSTree = du.BSTree
@@ -52,64 +51,83 @@ rest = rest.replace("\\", "/")
 wsl_directory = f"/mnt/{drive_letter}/{rest}"
 
 # --- GraphViz downloader and checker ---
-def graphviz_downloader():
-    # --- Config file for GraphViz download ---
-    # def create_json():
-    #     with open("SomeConfigs.json", "w") as new:
-    #         json.dump({"downloaded": 0}, new, indent=2)
-    #
-    # # 0 means that IT IS NOT DOWNLOADED
-    # # 1 means that return everything is OK
-    #
-    # if not os.path.exists("SomeConfigs.json"):
-    #     create_json()
-    #
-    # with open("SomeConfigs.json", "r", encoding="utf-8") as conf:
-    #     try:
-    #         config = json.load(conf)
-    #     except json.JSONDecodeError:
-    #         raise JSONDecodeError
-    #
-    #     if config.get('downloaded', 0) == 1:
-    #         return
+def have_wsl_launcher() -> bool:
+    return shutil.which("wsl.exe") or shutil.which("wsl")
 
-    def has_graphviz() -> bool:
-        return subprocess.run(
-            ["wsl", "bash", "-c", "command -v dot"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        ).returncode == 0
+def wsl_default_distro_ready() -> bool:
+    # returns 0 if a default distro exists and is runnable
+    return subprocess.run(["wsl", "-e", "true"],
+                          stdout=subprocess.DEVNULL,
+                          stderr=subprocess.DEVNULL).returncode == 0
 
-    def install_graphviz() -> None:
-        print("Installing Graphviz in WSL …")
-        cmd = (
-            "export DEBIAN_FRONTEND=noninteractive ; "
-            "apt-get update -qq && "
-            "apt-get install -y graphviz"
+def inside_wsl() -> bool:
+    return "WSL_DISTRO_NAME" in os.environ
+
+def run_in_wsl(cmd, *, root=False, check=True):
+    "Works whether caller is on Windows *or* already inside WSL."
+    if inside_wsl():
+        return subprocess.run(cmd, check=check)
+    if not have_wsl_launcher():
+        raise RuntimeError("WSL is not installed on this machine.")
+    if not wsl_default_distro_ready():
+        raise RuntimeError(
+            "WSL exists but no distro is installed or it requires `wsl --update`."
         )
-        subprocess.run(
-            ["wsl", "-u", "root", "--", "sh", "-c", cmd],
-            check=True,
-        )
+    full = ["wsl", "--user", "root"] + ["--"] + cmd if root else ["wsl", "--"] + cmd
+    return subprocess.run(full, check=check)
 
+def has_graphviz() -> bool:
+    return run_in_wsl(["sh", "-c", "command -v dot"],
+                      check=False).returncode == 0
+
+def ensure_graphviz():
     if has_graphviz():
-        print("✅ Graphviz is already installed.")
-        # config['downloaded'] = 1
-        # with open("SomeConfigs.json", "w") as conf:
-        #     json.dump(config, conf)
-        # return
-
-    install_graphviz()
-
+        print("✅ Graphviz already present")
+        return
+    print("Installing Graphviz…")
+    run_in_wsl(
+        ["sh", "-c",
+         "export DEBIAN_FRONTEND=noninteractive && "
+         "(command -v apt-get && apt-get update -qq && "
+         "apt-get install -y graphviz) || "
+         "(command -v apk && apk add graphviz) || "
+         "(command -v dnf && dnf -y install graphviz)"],
+        root=True
+    )
     if not has_graphviz():
-        print("Failed to download GraphViz!")
-        raise FileNotFoundError
+        raise RuntimeError("Graphviz installation failed")
 
-    # config['downloaded'] = 1
-    # with open("SomeConfigs.json", "w") as conf:
-    #     json.dump(config, conf)
-
-    print("✅ Graphviz installed successfully.")
+# def graphviz_downloader():
+#     def has_graphviz() -> bool:
+#         return subprocess.run(
+#             ["wsl", "bash", "-c", "command -v dot"],
+#             stdout=subprocess.DEVNULL,
+#             stderr=subprocess.DEVNULL,
+#         ).returncode == 0
+#
+#     def install_graphviz() -> None:
+#         print("Installing Graphviz in WSL …")
+#         cmd = (
+#             "export DEBIAN_FRONTEND=noninteractive ; "
+#             "apt-get update -qq && "
+#             "apt-get install -y graphviz"
+#         )
+#         subprocess.run(
+#             ["wsl", "-u", "root", "--", "sh", "-c", cmd],
+#             check=True,
+#         )
+#
+#     if has_graphviz():
+#         print("✅ Graphviz is already installed.")
+#         return
+#
+#     install_graphviz()
+#
+#     if not has_graphviz():
+#         print("Failed to download GraphViz!")
+#         raise FileNotFoundError
+#
+#     print("✅ Graphviz installed successfully.")
 
 
 # --- Functions for drawing ---
@@ -339,7 +357,8 @@ class Tester(unittest.TestCase):
 
         after(name="rebalanceTree", tree4=self.tree4)
 
-graphviz_downloader()
+# graphviz_downloader()
+ensure_graphviz()
 before()
 if __name__ == '__main__':
     unittest.main()
