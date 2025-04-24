@@ -123,10 +123,26 @@ def maker2():
     return vertices
 
 
+def maker3():
+    vertices = {i: Vertex(f"V{i}") for i in range(100, 106)}
+    edges = [
+        (100, 102),
+        (102, 103),
+        (103, 104),
+        (104, 105),
+        (100, 101),
+        (101, 105)
+    ]
+    for src, dst in edges:
+        vertices[src].succs.append(vertices[dst])
+    return vertices
+
+
 class Tester(unittest.TestCase):
     def setUp(self):
         self.vertices1 = maker1()
         self.vertices2 = maker2()
+        self.vertices3 = maker3()
 
     def test_reachable_size1(self):
         self.assertEqual(du.reachable_size(self.vertices1['A']), (6, 6))
@@ -197,6 +213,9 @@ class Tester(unittest.TestCase):
 
         self.setUp()
         self.assertEqual(du.distance(self.vertices2[14], self.vertices2[9]), 7)
+
+        self.setUp()
+        self.assertEqual(du.distance(self.vertices3[100], self.vertices3[105]), 2)
 
 before()
 if __name__ == '__main__':
