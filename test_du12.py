@@ -76,7 +76,7 @@ def graphviz_checker():
     def wsl_default_distro_ready() -> bool:
         return subprocess.run(["wsl", "-e", "true"],
                               stdout=subprocess.DEVNULL,
-                              stderr=subprocess.DEVNULL).returncode == 0
+                              stderr=subprocess.DEVNULL, capture_output=True).returncode == 0
 
     def inside_wsl() -> bool:
         return "WSL_DISTRO_NAME" in os.environ
@@ -230,8 +230,9 @@ class Tester(unittest.TestCase):
         self.assertEqual(sorted(du.reachable_with_charging(self.graph3, 3, 4)), [1, 2, 3, 4, 5, 6, 7], "This is just extra?!")
 
         self.assertEqual(sorted(du.reachable_with_charging(self.graph4, 2, 1)), [0, 1, 2, 3, 4, 5, 6, 7])
-        self.assertEqual(sorted(du.reachable_with_charging(self.graph4, 0, 0)), [0, 1, 2, 3, 4, 5, 6, 7])
-        self.assertEqual(sorted(du.reachable_with_charging(self.graph4, 7, 0)), [0, 1, 2, 3, 4, 5, 6, 7])
+        self.assertEqual(sorted(du.reachable_with_charging(self.graph4, 0, 0)), [0, 3, 6])
+        self.assertEqual(sorted(du.reachable_with_charging(self.graph4, 7, 0)), [3, 6, 7])
+        self.assertEqual(sorted(du.reachable_with_charging(self.graph4, 0, 8)), [0, 1, 2, 3, 4, 5, 6, 7])
 
 
 before()
