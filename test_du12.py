@@ -76,7 +76,7 @@ def graphviz_checker():
     def wsl_default_distro_ready() -> bool:
         return subprocess.run(["wsl", "-e", "true"],
                               stdout=subprocess.DEVNULL,
-                              stderr=subprocess.DEVNULL, capture_output=True).returncode == 0
+                              stderr=subprocess.DEVNULL).returncode == 0
 
     def inside_wsl() -> bool:
         return "WSL_DISTRO_NAME" in os.environ
