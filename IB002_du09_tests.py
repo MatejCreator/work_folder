@@ -11,20 +11,6 @@ What this script does
   that tree diagrams can be rendered without manual setup
 ▪ Cleans old *.dot / *.png files, regenerates fresh DOT files and
   converts them to PNG using Graphviz
-
-How to use after()
-------------------
-after(name, tree1=None, …, tree5=None)
-    • Call this anywhere in your own tests or debugging code.
-    • Pass up to five BSTree
-      Example: `after("insertStep", tree1=my_tree)`
-    • For every non‑None tree it writes
-          <name>1.dot  →  <name>1.png
-          <name>2.dot  →  <name>2.png
-          …
-      in the working directory, let you open the PNG and inspect
-      the exact structure that existed at that point in the algorithm.
-      ( examples: after("YourNameForIt", tree1=self.tree1, tree2=myTree4) )
 """
 
 import unittest
